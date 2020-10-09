@@ -5,15 +5,23 @@ class Client():
         self.host = host
         self.port = port
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client.settimeout(0.05)
 
     def Connect(self):
-        self.client.connect((self.host, self.port))
+        try:
+            self.client.connect((self.host, self.port))
+        except:
+            print('無法連線至server')
+        
+    def Receive(self):
+        try:
+            data = self.client.recv(1024)
+            return data.decode('utf-8')
+        except:
+            return ''
 
     def Send(self, text):
-        try:
-            self.client.send(text)
-        except:
-            print('請檢查是否連接到Server')
+        return self.client.send(text.encode())
 
     def Close(self):
         self.client.close()

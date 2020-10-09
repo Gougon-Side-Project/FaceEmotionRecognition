@@ -7,20 +7,28 @@ from client import Client
 
 from emotions import emotion_label
 
-IS_NEED_TO_SEND_MESSAGE = False
-HOST = '127.0.0.1'
-PORT = 8888
+IS_NEED_TO_SEND_MESSAGE = True
+HOST = '10.120.10.201'
+PORT = 6321
 
 def PredictEmotion(frame, face_rects, scores):
-    # Assume only 1 person
+    # Pick biggest face
+    biggest_length = 0
+    nearest_face = 0
+    for idx, face_rect in enumerate(face_rects):
+        length = face_rect.right() - face_rect.left()
+        print(length)
+        if length > biggest_length:
+            biggest_length = length
+            nearest_face = idx
+            
     # Mark face & score
-    i = 0
-    rect = face_rects[0]
+    rect = face_rects[nearest_face]
     x1 = rect.left()
     y1 = rect.top()
     x2 = rect.right()
     y2 = rect.bottom()
-    text = "%2.2f (%d)" % (scores[i], idx[i])
+    text = "%2.2f" % (scores[nearest_face])
 
     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
     cv2.putText(frame, text, (x1, y1), cv2.FONT_HERSHEY_DUPLEX, 0.7, (255, 255, 255), 1)
@@ -35,13 +43,14 @@ def PredictEmotion(frame, face_rects, scores):
         score, emotion = emotion_predictor.Predict(transform_image)
         cv2.putText(frame, emotion_label[emotion], (0, 100), cv2.FONT_HERSHEY_DUPLEX, 0.7, (0, 0, 0), 1)
 
-        # Send message
+        # Send message (good: 1, 4, 6    bad: 0, 2, 3, 5)
         if IS_NEED_TO_SEND_MESSAGE:
-            client.Send('&Score = ' + score + ', &Emotion = ' + emotion)
+            message = '&Score = ' + str(score) + ', &Emotion = ' + str(emotion) + '\n'
+            client.Send(message)
     except:
         print('Exception')
 
-camera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture(1)
 
 detector = dlib.get_frontal_face_detector()
 
@@ -56,6 +65,11 @@ if IS_NEED_TO_SEND_MESSAGE:
     client.Connect()
 
 while True:
+    # Regist to server
+    if IS_NEED_TO_SEND_MESSAGE:
+        if '%NAME' in client.Receive():
+            client.Send('&NAME|FER\n')
+    
     # ret : Is read image?
     ret, frame = camera.read()
 
