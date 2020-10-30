@@ -7,8 +7,8 @@ class ImagePreprocessor():
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
         # Put target pixels to transform image
-        transform_image = gray_image[face_rect.top():face_rect.bottom(),
-                                     face_rect.left():face_rect.right()]
+        transform_image = gray_image[face_rect.Top:face_rect.Bottom,
+                                     face_rect.Left:face_rect.Right]
         transform_image = transform_image / 255
 
         # Resize to 48 * 48

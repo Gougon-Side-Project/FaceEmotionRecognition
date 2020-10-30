@@ -1,15 +1,19 @@
+import config
+
 import cv2
 import dlib
 
 from image_preprocessor import ImagePreprocessor
 from emotion_predictor import  EmotionPredictor
 from client import Client
+from rect import Rect
 
 from emotions import emotion_label
 
-IS_NEED_TO_SEND_MESSAGE = True
-HOST = '10.120.10.201'
-PORT = 6321
+IS_NEED_TO_SEND_MESSAGE = config.IS_NEED_TO_SEND_MESSAGE
+HOST = config.HOST
+PORT = config.PORT
+SHAPE_PREDICT_MODEL = config.SHAPE_PREDICT_MODEL
 
 def PredictEmotion(frame, face_rects, scores):
     # Pick biggest face
@@ -23,11 +27,13 @@ def PredictEmotion(frame, face_rects, scores):
             nearest_face = idx
             
     # Mark face & score
-    rect = face_rects[nearest_face]
-    x1 = rect.left()
-    y1 = rect.top()
-    x2 = rect.right()
-    y2 = rect.bottom()
+    face_rect = face_rects[nearest_face]
+    head_rect = Rect(face_rect.top(), face_rect.bottom(), face_rect.left(), face_rect.right())
+    head_rect.FitFaceToHeadSize()
+    x1 = head_rect.Left
+    y1 = head_rect.Top
+    x2 = head_rect.Right
+    y2 = head_rect.Bottom
     text = "%2.2f" % (scores[nearest_face])
 
     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 4)
@@ -36,25 +42,24 @@ def PredictEmotion(frame, face_rects, scores):
     # Preprocessing image
     preprocessor = ImagePreprocessor()
     try:
-        transform_image = preprocessor.Transform(frame, rect)
+        transform_image = preprocessor.Transform(frame, head_rect)
 
         # Predict emotion
         emotion_predictor = EmotionPredictor()
         score, emotion = emotion_predictor.Predict(transform_image)
         cv2.putText(frame, emotion_label[emotion], (0, 100), cv2.FONT_HERSHEY_DUPLEX, 0.7, (0, 0, 0), 1)
 
-        # Send message (good: 1, 4, 6    bad: 0, 2, 3, 5)
         if IS_NEED_TO_SEND_MESSAGE:
             message = '&Score = ' + str(score) + ', &Emotion = ' + str(emotion) + '\n'
             client.Send(message)
     except:
         print('Exception')
 
-camera = cv2.VideoCapture(1)
+camera = cv2.VideoCapture(0)
 
 detector = dlib.get_frontal_face_detector()
 
-predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
+predictor = dlib.shape_predictor(SHAPE_PREDICT_MODEL)
 
 if not camera.isOpened():
     print('Cannot open camera')

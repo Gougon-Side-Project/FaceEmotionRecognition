@@ -1,1 +1,1 @@
-emotion_label = ['Anger', 'Contempt', 'Disgust', 'Fear', 'Happy', 'Sadness', 'Surprise']
+emotion_label = ['Happy', 'Sadness']
